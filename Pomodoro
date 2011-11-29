@@ -1,0 +1,46 @@
+#!/bin/bash
+
+zenitycounter() {
+END=`date --utc --date "now +$1 minute" +%s`
+ENDD=`date --date "now +$1 minute" +%T`
+#(for i in {0..300}; do 
+(while :; do 
+    DIFFSEC=$((END-`date --utc --date "now" +%s`))
+    PERCENTAGE=`echo "100-(100*($DIFFSEC/($1*60)))" | bc -l`
+    printf "%.0f\n" $PERCENTAGE
+    R=$(date --utc --date "1970-01-01 $DIFFSEC sec" "+%T")
+    echo "# $R remain"; 
+    sleep 1; 
+    if [ "$DIFFSEC" -lt "0" ];    then         break;    fi
+done)  | zenity --progress --auto-close --title="Pomodoro $1-min [until $ENDD] $2" --width=425
+}
+
+# 25 minutes timer 
+play -q /usr/share/sounds/ubuntu/stereo/bell.ogg repeat 2 &
+zenity --question --text="Start Pomodoro 25 minute Work?" 
+if [[ $? -eq 1 ]]; then
+    exit 0
+fi
+DISPLAY=:0 notify-send -t 5000 -i /storage/photos/pomodoro64.png "New Pomodoro starts" "You have 25 minutes to work."  &
+zenitycounter "25" "Work"
+ENDD=`date --utc --date "now" +%T`
+mpg123 -q /storage/music/alarmclockringtones/antique_alarm_128.mp3 &
+DISPLAY=:0 notify-send -t 10000 -i /storage/photos/pomodoro64.png "Pomodoro ended" "Take a break!" 
+
+# 4 minutes timer 
+zenity --question --text="Pomodoro finished at [$ENDD]! Start 5 minute rest?!"
+if [[ $? -eq 1 ]]; then
+    zenity --info --text="Pomodoro finished at [$ENDD]! Confirm! Please restart Pomodoro in order to make another turn."
+    exit 0
+fi
+play -q /home/g1ra/arnold_hastalavistababy.wav &
+zenitycounter "5" "Rest"
+ENDD=`date --utc --date "now" +%T`
+play -q /usr/share/sounds/ubuntu/stereo/bell.ogg repeat 5 
+play -q /home/g1ra/arnold_illbeback.wav &
+zenity --info --text="Rest finished at [$ENDD]! Confirm! Please restart Pomodoro in order to make another turn."
+
+#mpg123 -q ZeroSignal.mp3
+#sleep 1500 
+#echo "Sleep 1500"
+#play -q /usr/share/sounds/ubuntu/stereo/bell.ogg repeat 2
